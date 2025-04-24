@@ -106,50 +106,6 @@ class BranchNetworkDDFB(nn.Module):
         out = self.fc(X)
 
         return X, out
-
-class BranchNetworkFDFB_nofc(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim):
-        super(BranchNetworkFDFB_nofc, self).__init__()     
-
-        self.encoder_layer = nn.TransformerEncoderLayer(
-            d_model=256, 
-            nhead=8, 
-            dim_feedforward=1024,
-            dropout=0.2,
-        )
-        self.attn_block = nn.TransformerEncoder(self.encoder_layer, num_layers=3)
-
-        self.global_context = nn.Sequential(
-            nn.Conv1d(256, 512, kernel_size=3, padding=1),
-            nn.GELU(),
-            nn.BatchNorm1d(512),
-            nn.Conv1d(512, 256, kernel_size=1),
-            nn.Sigmoid()
-        )
-
-        self.dynamic_weights = nn.Sequential(
-            nn.Linear(256, 128),
-            nn.GELU(),
-            nn.Linear(128, 1),
-            nn.Softmax(dim=1)
-        )
-        
-    def forward(self, X):
-
-        X = self.attn_block(X)
-
-        X_trans = X.permute(0, 2, 1)
-        context = self.global_context(X_trans)
-        X_trans = X_trans * context
-        X_enhanced = X_trans.permute(0, 2, 1)
-
-        X_enhanced = X_enhanced + X
-
-        weights = self.dynamic_weights(X_enhanced)
-        weighted_sum = torch.sum(X_enhanced * weights, dim=1)
-        
-        return X_enhanced, weighted_sum
-    
     
 class BranchNetworkFDFB_fc(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim):
@@ -223,7 +179,6 @@ class LNet(nn.Module):
         self.branch_NFN = BranchNetworkNFN(input_dim1)
         
         self.branch_DDFB = BranchNetworkDDFB(input_dim1)
-        self.branch_FDFB_nofc = BranchNetworkFDFB_nofc(input_dim1, hidden_dim, 2)
         self.branch_FDFB_fc = BranchNetworkFDFB_fc(input_dim1, hidden_dim, 2)
         
         self.branch_EFB = BranchNetworkEFB(input_dim1, hidden_dim, 6)
