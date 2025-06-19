@@ -36,7 +36,6 @@ class DualConsistencyRegularization(nn.Module):
         self.register_buffer('norm_factor', torch.sqrt(torch.tensor(128.0)))
         
     def _compute_similarity_matrix(self, encoded):
-        """计算相似度矩阵，优化了矩阵计算"""
 
         sim_matrix = torch.bmm(encoded, encoded.transpose(1, 2)) / self.norm_factor
 
@@ -46,7 +45,6 @@ class DualConsistencyRegularization(nn.Module):
 
         return sim_matrix
     def _compute_regularization_loss(self, F_d_updated, F_n_updated, F_e_updated):
-        """计算正则化损失，优化了批处理操作"""
 
         F_d_self = torch.bmm(F_d_updated, F_d_updated.transpose(1, 2))
         F_n_self = torch.bmm(F_n_updated, F_n_updated.transpose(1, 2))
